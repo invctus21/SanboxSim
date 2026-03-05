@@ -1,5 +1,5 @@
 import pygame
-import cupy as np
+import numpy as np
 import random
 
 WIDTH, HEIGHT = 800, 600
