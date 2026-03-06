@@ -17,6 +17,7 @@ materials = {
     2: {'name': "Water", 'color': (116, 204, 244)},
     3: {'name': "Lava",  'color': (207, 70,  16 )},
     4: {'name': "Stone", 'color': (128, 128, 128)},
+    5: {'name': "Snow",  'color': (255, 255, 255)},
 }
 
 grid = np.zeros((ROWS, COLS), dtype=int)  # 0 = empty, 1 = sand, 2 = water
@@ -26,7 +27,8 @@ lava_timer = 0
 lava_speed = 5
 
 particulate_nature = {
-    'sand':.8,
+    'sand':.5,
+    'snow':.8,
 }
 
 def draw_toolbar(screen):
@@ -113,7 +115,6 @@ def update_water():
                         grid[row][col] = 0
 
 def update_lava():
-
     for row in range(ROWS - 2, -1, -1):  # bottom to top
         for col in range(COLS):
             if grid[row][col] == 3:
@@ -152,6 +153,43 @@ def lava_water_interaction():
                         if grid[nr][nc] == 2:  # neighbor is water
                             grid[row][col] = 0  # destroy lava
                             grid[nr][nc] = 0    # destroy water
+
+
+def update_snow():
+    # iterate bottom to top so snow falls correctly
+    for row in range(ROWS - 2, -1, -1):
+        for col in range(COLS):
+            if grid[row][col] == 5:  # it's snow
+
+                if random.random() > particulate_nature['snow']:
+                    continue
+
+                if grid[row+1][col] == 0:
+                    grid[row+1][col] = 5
+                    grid[row][col] = 0
+
+                else:
+                    # try diagonal
+                    dirs = [-1, 1]
+                    random.shuffle(dirs)
+                    for d in dirs:
+                        if 0 <= col+d < COLS and grid[row+1][col+d] == 0:
+                            grid[row+1][col+d] = 5
+                            grid[row][col] = 0
+                            break
+
+def snow_water_interaction():
+    for row in range(ROWS):
+        for col in range(COLS):
+            if grid[row][col] == 5:  # its snow
+                # check all 4 neighbors
+                for dr, dc in [(-1,0), (1,0), (0,-1), (0,1)]:
+                    nr, nc = row + dr, col + dc
+                    if 0 <= nr < ROWS and 0 <= nc < COLS:
+                        if grid[nr][nc] == 2:  # neighbor is water
+                            if random.random() < 0.01:  # only 1% chance per frame
+                                grid[row][col] = 2    # make snow into water
+
 
 def draw_grid(screen):
     screen.fill((30, 30, 30))
@@ -207,8 +245,10 @@ while running:
             update_lava()
             lava_timer = 0
         update_sand()
+        update_snow()
         update_water()
         lava_water_interaction()
+        snow_water_interaction()
         physics_timer = 0
 
     draw_grid(screen)
